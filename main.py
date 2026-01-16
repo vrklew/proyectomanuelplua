@@ -1,97 +1,91 @@
 from datetime import datetime
 
-# 1. CLASE BASE: Persona (Herencia)
+# 1. CLASE BASE: Persona
 class Persona:
     def __init__(self, nombre, dni):
         self.nombre = nombre
         self.dni = dni
 
-# 2. CLASE ESTUDIANTE: Hereda de Persona
-class Estudiante(Persona):
-    def __init__(self, nombre, dni, matricula):
-        super().__init__(nombre, dni)
-        self.matricula = matricula
-        self.cursos_inscritos = []
-        self.creditos_totales = 0
-
-# 3. CLASE PROFESOR: Hereda de Persona
+# 2. CLASE PROFESOR: Hereda de Persona
 class Profesor(Persona):
     def __init__(self, nombre, dni, departamento):
         super().__init__(nombre, dni)
         self.departamento = departamento
+        self.materias_asignadas = []
 
-# 4. CLASE ASIGNATURA (Entidad)
+# 3. CLASE ASIGNATURA
 class Asignatura:
     def __init__(self, nombre_curso, creditos, cupos):
         self.nombre_curso = nombre_curso
         self.creditos = creditos
-        self.cupos_disponibles = cupos
+        self.cupos_totales = cupos
+        self.alumnos_inscritos = 0 # Contador de inscritos
 
-# 5. CLASE TRANSACCIONAL: Inscripcion
-class Inscripcion:
-    def __init__(self, estudiante, asignatura, profesor):
-        self.fecha = datetime.now()
-        self.estudiante = estudiante
-        self.asignatura = asignatura
-        self.profesor = profesor
-
-    def procesar_registro(self):
-        # Lógica Transaccional
-        if self.asignatura.cupos_disponibles > 0:
-            # 1. Reducir cupo de la materia
-            self.asignatura.cupos_disponibles -= 1
-            
-            # 2. Actualizar datos del estudiante
-            self.estudiante.cursos_inscritos.append(self.asignatura.nombre_curso)
-            self.estudiante.creditos_totales += self.asignatura.creditos
-            
-            return True, "Inscripción exitosa"
-        else:
-            return False, "Error: No hay cupos disponibles"
-
-# 6. CLASE DE CONTROL: SistemaUniversitario (Maneja la lógica de consola)
-class SistemaUniversitario:
+# 4. CLASE DE CONTROL: SistemaDocente
+class SistemaDocente:
     def __init__(self):
-        # Datos iniciales (Mock data)
-        self.alumno = Estudiante("Juan Perez", "123456", "2024-001")
-        self.profe = Profesor("Dra. Martinez", "987654", "Ciencias")
-        self.curso = Asignatura("Programación Python", 6, 2)
+        self.profesor = None
+        self.curso = None
+
+    def configurar_perfil(self):
+        print("--- REGISTRO DE PROFESOR ---")
+        nombre = input("Ingresa tu nombre completo: ")
+        dni = input("Ingresa tu DNI: ")
+        depto = input("Departamento académico: ")
+        self.profesor = Profesor(nombre, dni, depto)
+
+        print("\n--- REGISTRO DE MATERIA A DICTAR ---")
+        nom_asig = input("Nombre de la materia: ")
+        cred_asig = int(input("Créditos de la materia: "))
+        cupos_asig = int(input("Capacidad máxima de alumnos (cupos): "))
+        self.curso = Asignatura(nom_asig, cred_asig, cupos_asig)
+        
+        # Guardamos la materia en el perfil del profesor
+        self.profesor.materias_asignadas.append(self.curso.nombre_curso)
+        print("\n¡Perfil y materia configurados correctamente!")
 
     def menu(self):
+        if not self.profesor:
+            self.configurar_perfil()
+
         while True:
-            print(f"\n--- UNI-REGISTRY PYTHON ---")
-            print(f"Estudiante: {self.alumno.nombre} | Créditos: {self.alumno.creditos_totales}")
-            print("1. Consultar Materia")
-            print("2. Inscribir Materia (Transacción)")
-            print("3. Ver mis Cursos")
+            print(f"\n--- PANEL DOCENTE: {self.profesor.nombre} ---")
+            print(f"Departamento: {self.profesor.departamento}")
+            print("-" * 35)
+            print("1. Ver detalles de mi materia")
+            print("2. Registrar ingreso de alumno (Reducir cupo)")
+            print("3. Ver resumen de carga académica")
             print("4. Salir")
             
             opcion = input("Seleccione una opción: ")
 
             if opcion == "1":
-                print(f"\nCurso: {self.curso.nombre_curso}")
-                print(f"Créditos: {self.curso.creditos} | Cupos: {self.curso.cupos_disponibles}")
+                print(f"\nMateria: {self.curso.nombre_curso}")
+                print(f"Créditos: {self.curso.creditos}")
+                print(f"Cupos Totales: {self.curso.cupos_totales}")
+                print(f"Lugares ocupados: {self.curso.alumnos_inscritos}")
+                print(f"Lugares disponibles: {self.curso.cupos_totales - self.curso.alumnos_inscritos}")
             
             elif opcion == "2":
-                # Ejecución de la transacción
-                transaccion = Inscripcion(self.alumno, self.curso, self.profe)
-                exito, mensaje = transaccion.procesar_registro()
-                print(f"\n{mensaje}")
+                # Lógica para manejar cupos
+                if self.curso.alumnos_inscritos < self.curso.cupos_totales:
+                    self.curso.alumnos_inscritos += 1
+                    print(f"\n[OK] Alumno registrado. Cupos restantes: {self.curso.cupos_totales - self.curso.alumnos_inscritos}")
+                else:
+                    print("\n[ERROR] No se pueden registrar más alumnos. Cupos agotados.")
             
             elif opcion == "3":
-                print("\nCursos inscritos:")
-                if not self.alumno.cursos_inscritos:
-                    print("Ninguno.")
-                for c in self.alumno.cursos_inscritos:
-                    print(f"- {c}")
+                print(f"\nResumen para el Prof. {self.profesor.nombre}:")
+                for m in self.profesor.materias_asignadas:
+                    print(f"- Asignatura: {m} ({self.profesor.departamento})")
             
             elif opcion == "4":
-                print("Saliendo del sistema...")
+                print("Cerrando sistema docente...")
                 break
             else:
                 print("Opción no válida.")
 
 # --- EJECUCIÓN ---
 if __name__ == "__main__":
-    sistema = SistemaUniversitario()
+    sistema = SistemaDocente()
     sistema.menu()
